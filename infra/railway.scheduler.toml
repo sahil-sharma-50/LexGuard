@@ -1,0 +1,14 @@
+# Attach this config to a separate Railway worker service using the same image.
+# The web service remains read-only; this process owns autonomous scheduler ticks.
+[build]
+dockerfilePath = "infra/Dockerfile.agent"
+
+[deploy]
+# Seed runtime artifacts best-effort at boot (risk state + per-symbol forecast
+# files live on the ephemeral container FS), then run the watch loop, which
+# retries a failed preflight every 30s instead of exiting.
+startCommand = "sh -c 'lexguard seed-risk-state || true; lexguard seed-forecast --symbol SPY || true; lexguard seed-forecast --symbol QQQ || true; lexguard seed-forecast --symbol IWM || true; exec lexguard scheduler --watch'"
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+preDeployCommand = "alembic upgrade head"

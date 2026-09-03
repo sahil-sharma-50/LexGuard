@@ -1,0 +1,46 @@
+# Vendored upstream reference repositories. Never publish copies of them.
+alpaca-mcp-server-main/
+cli-main/
+alpaca-py/
+alpaca-documentation/
+
+# Local operating-system and editor files.
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local runtime output.
+*.log
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+*.db
+.pytest_cache/
+.pytest-tmp/
+.pytest-tmp-review/
+.tmp-pytest/
+.hypothesis/
+.tmp/
+.mypy_cache/
+.ruff_cache/
+web/node_modules/
+web/.next/
+web/coverage/
+web/test-results/
+web/playwright-report/
+web/output/playwright/
+web/tsconfig.tsbuildinfo
+artifacts/generated/
+artifacts/research/*/raw/
+.lexguard/
+artifacts/private/
+output/private/
+.superpowers/
+.playwright-cli/
+.worktrees/
+.dev.pids
+.dev-logs/

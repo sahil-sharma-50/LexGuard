@@ -1,0 +1,10 @@
+{
+  "case_id": "44444444-4444-4444-4444-444444444444",
+  "trading_date": "2026-08-24",
+  "decision_window": "10:05",
+  "state": "REFUSED",
+  "underlying": "SPY",
+  "reason_codes": ["CATALYST_VETO"],
+  "environment": "development",
+  "provenance": "sanitized archived fixture"
+}

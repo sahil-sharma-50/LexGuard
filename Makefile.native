@@ -1,0 +1,60 @@
+# Native (non-Docker) development targets.
+# Prefer `make up` from the root Makefile unless you need a host-only workflow.
+
+SHELL := /bin/bash
+.DEFAULT_GOAL := help
+
+NPM_GLOBAL_BIN := $(shell npm prefix -g 2>/dev/null)/bin
+export PATH := $(NPM_GLOBAL_BIN):/opt/homebrew/bin:$(PATH)
+
+REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+AGENT_DIR := $(REPO_ROOT)/agent
+WEB_DIR := $(REPO_ROOT)/web
+MCP_DIR := $(REPO_ROOT)/alpaca-mcp-server-main
+VENV := $(AGENT_DIR)/.venv
+PYTHON := $(VENV)/bin/python
+LEXGUARD := $(VENV)/bin/lexguard
+ENV_FILE := $(REPO_ROOT)/.env
+MCP_PORT ?= 8010
+API_PORT ?= 8000
+WEB_PORT ?= 3000
+
+define load_env
+set -a; source "$(ENV_FILE)"; set +a
+endef
+
+.PHONY: help setup env install install-agent install-web db seed preflight dev stop
+
+help:
+	@echo "Lexguard: native development"
+
+env:
+	@if [ ! -f "$(ENV_FILE)" ]; then cp "$(REPO_ROOT)/.env.example" "$(ENV_FILE)"; fi
+
+install-agent:
+	@command -v uv >/dev/null
+	@if [ ! -x "$(PYTHON)" ]; then uv venv "$(VENV)"; fi
+	@uv pip install -p "$(PYTHON)" -e "$(AGENT_DIR)[dev]"
+
+install-web:
+	@command -v pnpm >/dev/null
+	@cd "$(WEB_DIR)" && pnpm install --frozen-lockfile
+
+install: install-agent install-web
+setup: env install
+
+db:
+	@$(load_env); cd "$(AGENT_DIR)"; createdb lexguard 2>/dev/null || true; PYTHONPATH=src "$(PYTHON)" -m alembic upgrade head
+
+seed:
+	@$(load_env); cd "$(AGENT_DIR)"; \
+	"$(LEXGUARD)" seed-risk-state; \
+	"$(LEXGUARD)" seed-forecast --symbol SPY; \
+	"$(LEXGUARD)" seed-forecast --symbol QQQ; \
+	"$(LEXGUARD)" seed-forecast --symbol IWM
+
+dev:
+	@bash "$(REPO_ROOT)/scripts/dev.sh"
+
+stop:
+	@bash "$(REPO_ROOT)/scripts/dev.sh" stop

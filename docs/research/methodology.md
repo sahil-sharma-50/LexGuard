@@ -1,0 +1,19 @@
+# Lexguard research methodology
+
+The research contract covers Alpaca CLI five-minute bars for SPY, QQQ, and IWM from 2024-03-01 through 2026-08-21. Development and cross-validation end on 2025-12-31. The untouched out-of-sample interval starts on 2026-01-02 and remains sealed unless the command line explicitly includes `--unseal-oos`; that acknowledgement is recorded in the manifest.
+
+Signals use completed bars only. Candidate selection filters every bar to timestamps at or before the signal; future-only contracts cannot affect selection. A candidate must be a standard 100-share, equal-ratio, same-underlying, same-expiration structure with 1–3 calendar DTE in `America/New_York`. Two ordered put strikes and two ordered call strikes must form either a covered iron condor (`BUY/SELL` puts and `SELL/BUY` calls) or covered reverse iron condor (the opposite sides). Mixed expirations, non-standard deliverables, malformed timestamps, timezone mismatches, duplicate or unordered bars, unresolved metadata, and unresolved corporate-action continuity fail closed.
+
+The custom options simulator fills every leg of an atomic four-leg structure at the exact next five-minute bar open. Buy fills are `open + max(0.02, 0.06 * open)`. Sell fills are `max(0.01, open - max(0.02, 0.06 * open))`. If any leg lacks the next bar, the structure abstains atomically.
+
+Required option fees are accrued separately from fill friction using the Alpaca Securities Brokerage Fee Schedule revised July 20, 2026: ORF $0.015 per contract, OCC $0.025 per contract, CAT $0.000003 per executed equivalent share, sell-side TAF $0.00329 per contract, and sell-side SEC fee at 0.0000206 of trade value. The simulator records unrounded execution accruals. The source states that real account fees are aggregated daily by type and rounded up to the nearest cent, so this difference remains explicit in `fee_source.json`.
+
+The research gate requires positive net return, profit factor at least 1.20, daily Sharpe at least 1.0 using sample standard deviation, maximum drawdown no worse than 4%, at least 60 completed trades, no profitable day contributing more than 35%, and no unresolved missing-data or lookahead warning. Failure means stop/redesign; it is not converted into a deployment claim.
+
+Every run records the exact Git commit. Artifact integrity is an exact recursive allowlist: missing, modified, and unexpected compact artifacts fail verification, while raw market data is excluded from artifact hashes and ignored by Git. `lexguard-research verify-dataset` separately checks the manifest's exact recursive raw-data fingerprint.
+
+After development, `lexguard-research freeze-development` creates an immutable record tied to the development parameter-file hash, recursive artifact-manifest hash, and code commit. `evaluate` requires that freeze and atomically consumes a freeze-specific OOS registry entry before replay, so the untouched interval can run only once for those frozen artifacts.
+
+Research outputs always include SPY, QQQ, and IWM buy-and-hold plus their equal-weight benchmark. Missing ETF history is reported as `UNAVAILABLE`, never synthesized. The ablation artifact includes quant-only, always-long-volatility, always-short-volatility, and hybrid policies. Hybrid influence is enabled only when profit factor or maximum drawdown improves and net return falls by no more than 10% versus quant-only; otherwise it is restricted to veto and explanation. Long- and short-side gates combine into exactly `BOTH`, `LONG_ONLY`, `SHORT_ONLY`, or `STOP_REDESIGN`.
+
+Results are hypothetical historical simulations and do not represent actual trading performance. They are not investment advice. Paper trading, when used for forward validation, is simulated and can differ from live trading. Applicable trading-activity fees are documented against the [Alpaca Brokerage Fee Schedule](https://files.alpaca.markets/disclosures/library/BrokFeeSched.pdf).

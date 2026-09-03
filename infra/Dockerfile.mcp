@@ -1,0 +1,17 @@
+# Official Alpaca MCP server as an internal Railway service.
+# The agent's evidence boundary talks to this over streamable HTTP.
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Pin to the version vendored in this repository (alpaca-mcp-server-main, v2.3.1).
+RUN pip install --no-cache-dir "alpaca-mcp-server==2.3.1" \
+    || pip install --no-cache-dir "git+https://github.com/alpacahq/alpaca-mcp-server@v2.3.1"
+
+RUN useradd --create-home --uid 10001 mcp
+USER mcp
+
+EXPOSE 8010
+ENTRYPOINT ["alpaca-mcp-server"]
+CMD ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8010"]

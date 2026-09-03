@@ -12,6 +12,8 @@ case, but it cannot choose contracts, strikes, quantity, price, or broker
 actions. Deterministic code owns the risk certificate and the execution
 boundary.
 
+![LexGuard banner](docs/assets/banner_image.png)
+
 > Important: Lexguard is a software project and research prototype. It is not
 > investment advice. It is configured for Alpaca paper trading only and must
 > not be pointed at a live brokerage account.

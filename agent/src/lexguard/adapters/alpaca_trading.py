@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import (
@@ -35,6 +36,7 @@ from pydantic import BaseModel, ConfigDict
 from lexguard.domain.models import TradeCertificate
 
 PAPER_BASE_URL = "https://paper-api.alpaca.markets"
+MARKET_TIMEZONE = ZoneInfo("America/New_York")
 
 # Keep the broker lifecycle vocabulary in one place.  The Trading API can
 # report transitional states that are neither a fill nor a terminal reject;
@@ -161,6 +163,14 @@ def _optional_decimal(value: Any, *, field: str) -> Decimal | None:
     if value is None:
         return None
     return _decimal(value, field=field)
+
+
+def _normalize_calendar_datetime(value: Any, *, field: str) -> datetime:
+    if not isinstance(value, datetime):
+        raise BrokerSchemaError(f"invalid broker field: {field}")
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=MARKET_TIMEZONE)
+    return value.astimezone(MARKET_TIMEZONE)
 
 
 class PaperBroker:
@@ -419,8 +429,8 @@ class PaperBroker:
             sessions.append(
                 BrokerCalendarSession(
                     trading_date=session_date,
-                    open=opened,
-                    close=closed,
+                    open=_normalize_calendar_datetime(opened, field="open"),
+                    close=_normalize_calendar_datetime(closed, field="close"),
                 )
             )
         return tuple(sessions)

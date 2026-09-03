@@ -159,6 +159,28 @@ async def test_gateway_passes_required_provenance_and_filters() -> None:
 
 
 @pytest.mark.asyncio
+async def test_gateway_maps_official_empty_order_and_position_results() -> None:
+    stub = StubMcp()
+    stub.responses["get_orders"] = {"structuredContent": {"data": {"result": []}}}
+    stub.responses["get_all_positions"] = {"structuredContent": {"data": {"result": []}}}
+    gateway = AlpacaMcpGateway(stub, timeout_seconds=0.1, retries=0)
+
+    assert await gateway.get_orders() == ()
+    assert await gateway.get_positions() == ()
+
+
+@pytest.mark.asyncio
+async def test_gateway_caps_default_news_request_at_provider_limit() -> None:
+    stub = StubMcp()
+    gateway = AlpacaMcpGateway(stub, timeout_seconds=0.1, retries=0)
+
+    await gateway.get_news("SPY")
+
+    news_args = next(args for name, args in stub.calls if name == "get_news")
+    assert news_args["limit"] == 50
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("fault", ["bad_json", "missing_quote"])
 async def test_gateway_rejects_invalid_market_payloads(fault: str) -> None:
     stub = StubMcp()

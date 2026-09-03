@@ -205,7 +205,7 @@ class AlpacaMcpGateway:
         self, *, status: str = "open", limit: int = 100
     ) -> tuple[OrderObservation, ...]:
         payload = await self._call("get_orders", {"status": status, "limit": limit})
-        rows = _sequence(payload, "orders")
+        rows = _sequence(payload, "orders", "result")
         return tuple(
             OrderObservation(
                 order_id=str(row.get("id", row.get("order_id", ""))),
@@ -218,7 +218,7 @@ class AlpacaMcpGateway:
 
     async def get_positions(self) -> tuple[PositionObservation, ...]:
         payload = await self._call("get_all_positions", {})
-        rows = _sequence(payload, "positions")
+        rows = _sequence(payload, "positions", "result")
         return tuple(
             PositionObservation(
                 symbol=str(_required(row, "symbol")),
@@ -356,7 +356,7 @@ class AlpacaMcpGateway:
         *,
         start: datetime | None = None,
         end: datetime | None = None,
-        limit: int = 100,
+        limit: int = 50,
     ) -> tuple[NewsEvidence, ...]:
         arguments: dict[str, Any] = {"symbols": symbols, "sort": "desc", "limit": limit}
         if start is not None:
@@ -418,7 +418,7 @@ def _unwrap_payload(raw: Any) -> Any:
             return _unwrap_payload(raw["data"])
         structured = raw.get("structuredContent", raw.get("structured_content"))
         if structured is not None:
-            return structured
+            return _unwrap_payload(structured)
         content = raw.get("content")
         if content is not None:
             return _unwrap_content(content)
@@ -431,7 +431,7 @@ def _unwrap_payload(raw: Any) -> Any:
         return _unwrap_payload(model_dump())
     structured = getattr(raw, "structuredContent", getattr(raw, "structured_content", None))
     if structured is not None:
-        return structured
+        return _unwrap_payload(structured)
     content = getattr(raw, "content", None)
     if content is not None:
         return _unwrap_content(content)

@@ -6,6 +6,7 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from alpaca.trading.enums import (
@@ -174,6 +175,30 @@ def test_paper_broker_does_not_synthesize_missing_risk_values() -> None:
     assert account.daily_pnl is None
     assert account.competition_drawdown is None
     assert account.options_level is None
+
+
+def test_paper_broker_normalizes_naive_calendar_times_to_new_york() -> None:
+    class CalendarClient(_TradingClientSpy):
+        def get_calendar(self, request: object) -> list[object]:
+            return [
+                SimpleNamespace(
+                    date=date(2026, 8, 24),
+                    open=datetime(2026, 8, 24, 9, 30),
+                    close=datetime(2026, 8, 24, 16, 0),
+                )
+            ]
+
+    import asyncio
+
+    sessions = asyncio.run(
+        PaperBroker("key", "secret", client=CalendarClient()).get_calendar(
+            date(2026, 8, 24), date(2026, 8, 24)
+        )
+    )
+
+    new_york = ZoneInfo("America/New_York")
+    assert sessions[0].open == datetime(2026, 8, 24, 9, 30, tzinfo=new_york)
+    assert sessions[0].close == datetime(2026, 8, 24, 16, 0, tzinfo=new_york)
 
 
 def test_close_legs_invert_actual_positions() -> None:

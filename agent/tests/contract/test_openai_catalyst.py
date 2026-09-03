@@ -9,7 +9,11 @@ from typing import Any
 
 import pytest
 
-from lexguard.adapters.openai_catalyst import CatalystInput, OpenAICatalystClient
+from lexguard.adapters.openai_catalyst import (
+    CatalystInput,
+    CatalystResponse,
+    OpenAICatalystClient,
+)
 from lexguard.domain.models import NewsEvidence
 
 OBSERVED = datetime(2026, 8, 24, 14, 5, tzinfo=UTC)
@@ -68,6 +72,13 @@ def _valid_reply() -> dict[str, Any]:
         "evidence_ids": ["n1"],
         "rationale": "The supplied headline is consistent with a higher-volatility scenario.",
     }
+
+
+def test_catalyst_response_schema_uses_json_number_for_confidence() -> None:
+    confidence_schema = CatalystResponse.model_json_schema()["properties"]["confidence"]
+
+    assert confidence_schema["type"] == "number"
+    assert "anyOf" not in confidence_schema
 
 
 @pytest.mark.asyncio

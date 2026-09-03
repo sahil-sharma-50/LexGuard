@@ -65,7 +65,10 @@ class RepositoryReadStore:
 
     def status(self) -> StatusResponse:
         database_health = self.repository.database_health()
-        heartbeat = self.repository.latest_artifact("health_heartbeat")
+        try:
+            heartbeat = self.repository.latest_artifact("health_heartbeat")
+        except Exception:  # noqa: BLE001 - status must survive an uninitialized schema
+            heartbeat = None
         if heartbeat is None:
             components, checked_at = health_state_from_artifact(
                 {}, self._now(), self._now(), _HEALTH_HEARTBEAT_FRESHNESS

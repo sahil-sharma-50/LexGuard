@@ -9,7 +9,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any, Literal, Protocol
+from typing import Annotated, Any, Literal, Protocol
+
+from pydantic import WithJsonSchema
 
 from lexguard.domain.models import (
     CatalystAssessment,
@@ -37,7 +39,7 @@ class CatalystInput(ImmutableModel):
 
 class CatalystResponse(ImmutableModel):
     scenario: Scenario
-    confidence: Decimal
+    confidence: Annotated[Decimal, WithJsonSchema({"type": "number"})]
     evidence_ids: tuple[str, ...]
     rationale: str
 
